@@ -33,7 +33,15 @@ class VoteAPI extends DataSource {
     };
   }
 
-  async getPeople({ people }) {}
+  async getPeople({ names }) {
+    const people = await this.store.people.findAll({
+      attributes: ['name', 'voteCount'],
+      where: {
+        name: names,
+      },
+    });
+    return people;
+  }
 
   async voteFor({ names, token }) {
     const result = {
@@ -48,13 +56,9 @@ class VoteAPI extends DataSource {
           throw new Error(
             `User token(${token}) doesn't match with db token(${ticket.token})`,
           );
-        } else if (ticket.used === ticket.total) {
-          throw new Error(`Token(${token}) has been used up)`);
         }
 
         console.log('[VOTE] Token valid, updating names');
-        // limit on the ticket should be enforced by the database
-        await this.store.ticket.increment('used', { by: 1, transaction: t });
         const updated = [];
         // SQLite doesn't support returned updated rows
         for (const name of names) {
@@ -64,7 +68,19 @@ class VoteAPI extends DataSource {
             transaction: t,
           });
           if (res[0]) {
-            updated.push(name);
+            if (ticket.used === ticket.total) {
+              // throw an error and ROLLBACK
+              throw new Error(`Token(${token}) has been used up)`);
+            } else {
+              // limit on the ticket should be enforced
+              await this.store.ticket.increment('used', {
+                by: 1,
+                where: { id: '0' },
+                transaction: t,
+              });
+              console.log('[VOTE] Token incremented');
+              updated.push(name);
+            }
           }
         }
         console.log(

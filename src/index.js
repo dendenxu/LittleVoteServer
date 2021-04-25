@@ -41,15 +41,19 @@ const server = new ApolloServer({
 
 var ticketTimer;
 
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max); // (inclusive of 0, but not 1)
+}
+
 async function initialize() {
-  // ! DEV-INIT
+  // ! STUB: DEV-INIT
   const names = await store.people
     .findAll({
       attributes: ['name'],
       raw: true,
     })
     .map(x => {
-      return x.name
+      return x.name;
     });
   if (!names) {
     console.log('[PERSON] Not a single soul in DB, should insert some.');
@@ -63,11 +67,7 @@ async function initialize() {
       );
     }
   } else {
-    console.log(
-      `[PERSON] Found some names in DB: ${names}, ${
-        names.length
-      }`,
-    );
+    console.log(`[PERSON] Found some names in DB: ${names}, ${names.length}`);
   }
   // END OF DEV-INIT
 
@@ -97,6 +97,9 @@ async function initialize() {
     );
   }
 
+  // STUB: Testing
+  const voteAPI = new VoteAPI({ store });
+
   ticketTimer = setInterval(async () => {
     const token = crypto.randomBytes(16).toString('hex');
     console.log(`[TICKET] Generating new ticket: ${token}`);
@@ -112,6 +115,20 @@ async function initialize() {
     } else {
       console.log(`[TICKET] Cannot update to new token`);
     }
+
+    // ! STUB: DEV-TEST: on every update of token, increment some body
+    // Let's assume only predefinedNames will be used in the database
+    const ind = getRandomInt(predefinedNames.length);
+    const name = predefinedNames[ind];
+    const status = await voteAPI.voteFor({ names: [name], token });
+    console.log(`[VOTE] Voting result: ${JSON.stringify(status, null, 2)}`);
+    
+    const people = await voteAPI.getPeople({ names: [name] });
+    console.log(`[VOTE] Query of people: ${JSON.stringify(people, null, 2)}`);
+    
+    const ticketDB = await voteAPI.getTicket();
+    console.log(`[VOTE] Query of ticket: ${JSON.stringify(ticketDB, null, 2)}`);
+    // END OF DEV-TEST
   }, TICKET_VALID_INTERVAL);
 }
 
