@@ -1,6 +1,19 @@
 const { gql } = require('apollo-server');
 
 const typeDefs = gql`
+
+  type Person {
+    id: ID!
+    name: String!
+    voteCount: Int!
+  }
+
+  type Ticket {
+    token: String! # shoule be an encrypted ticket
+    used: Int!
+    total: Int!
+  }
+
   # Schema for our little vote application
   type Launch {
     id: ID! # ! means this field can never be null
@@ -34,6 +47,11 @@ const typeDefs = gql`
   }
 
   type Query {
+    people(names: [String]!): [Person]!
+    
+    ticket: Ticket!
+
+
     launches( # replace the current launches query with this one.
       """
       The number of results to show. Must be >= 1. Default = 20
@@ -63,6 +81,15 @@ const typeDefs = gql`
     bookTrips(launchIds: [ID]!): TripUpdateResponse!
     cancelTrip(launchId: ID!): TripUpdateResponse!
     login(email: String): User
+
+
+    vote(names: [String]!, token: String): VoteUpdateResponse!
+  }
+
+  type VoteUpdateResponse {
+    success: Boolean!
+    message: String
+    people: [Person]
   }
 
   type TripUpdateResponse {

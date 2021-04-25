@@ -29,16 +29,56 @@ module.exports.paginateResults = ({
 };
 
 module.exports.createStore = () => {
-  const Op = SQL.Op;
-  const operatorsAliases = {
-    $in: Op.in,
-  };
+  // const Op = SQL.Op;
+  // const operatorsAliases = {
+  //   $in: Op.in,
+  // };
 
   const db = new SQL('database', 'username', 'password', {
     dialect: 'sqlite',
     storage: './store.sqlite',
-    operatorsAliases,
+    // operatorsAliases,
     // logging: false,
+  });
+
+  const ticket = db.define('ticket', {
+    id: {
+      type: SQL.INTEGER,
+      defaultValue: '0',
+      allowNull: false,
+      primaryKey: true,
+      validate: {
+        equals: '0',
+      },
+    },
+    createdAt: SQL.DATE,
+    updatedAt: SQL.DATE,
+    token: SQL.STRING,
+    used: {
+      // this can only increment
+      type: SQL.INTEGER,
+      defaultValue: '0',
+      // validate: {
+      //   isValid(value) {
+      //     if (parseInt(value) > parseInt(this.total)) {
+      //       throw new Error(
+      //         'Used count of ticket must be smaller than total usable count.',
+      //       );
+      //     }
+      //   },
+      // },
+    },
+    total: SQL.INTEGER,
+  });
+
+  const people = db.define('person', {
+    id: {
+      type: SQL.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    name: SQL.STRING,
+    voteCount: SQL.INTEGER,
   });
 
   const users = db.define('user', {
@@ -65,13 +105,29 @@ module.exports.createStore = () => {
     userId: SQL.INTEGER,
   });
 
+  db.sync().then(() => {
+    console.log('[DATABASE] Database has been synced.');
+  });
+
   db.authenticate()
     .then(() => {
-      console.log('Connection to DB has been established successfully.');
+      console.log(
+        '[DATABASE] Connection to database has been established successfully.',
+      );
     })
     .catch(err => {
-      console.error('Unable to connect to the database:', err);
+      console.error('[DATABASE] Unable to connect to the database:', err);
     });
 
-  return { users, trips };
+  db.getQueryInterface()
+    .showAllSchemas()
+    .then(rows => {
+      console.log(JSON.stringify(rows, null, 2));
+    });
+
+  // db.query('SELECT name FROM people').then(rows => {
+  //   console.log(JSON.stringify(rows, null, 2));
+  // });
+
+  return { db, ticket, people, users, trips };
 };
