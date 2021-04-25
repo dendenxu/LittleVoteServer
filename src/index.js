@@ -13,8 +13,9 @@ const { predefinedNames } = require('./datasources/names');
 const store = createStore();
 const crypto = require('crypto');
 
-const TICKET_VALID_INTERVAL = 2000; // ms
+const TICKET_VALID_INTERVAL = 100000; // ms
 const TICKET_TOTAL_USAGE_LIMIT = 100;
+const ENABLE_SERVER_TESTING = false;
 
 const server = new ApolloServer({
   context: async ({ req }) => {
@@ -31,7 +32,7 @@ const server = new ApolloServer({
   },
   typeDefs,
   resolvers,
-  tracing: true,
+  // tracing: true,
   dataSources: () => ({
     launchAPI: new LaunchAPI(), // If you use this.context in a datasource, it's critical to create a new instance in the dataSources function, rather than sharing a single instance
     userAPI: new UserAPI({ store }),
@@ -47,27 +48,29 @@ function getRandomInt(max) {
 
 async function initialize() {
   // ! STUB: DEV-INIT
-  const names = await store.people
-    .findAll({
-      attributes: ['name'],
-      raw: true,
-    })
-    .map(x => {
-      return x.name;
-    });
-  if (!names) {
-    console.log('[PERSON] Not a single soul in DB, should insert some.');
-    for (const name of predefinedNames) {
-      const created = await store.people.create({
-        name,
-        voteCount: 0,
+  if (ENABLE_SERVER_TESTING) {
+    const names = await store.people
+      .findAll({
+        attributes: ['name'],
+        raw: true,
+      })
+      .map(x => {
+        return x.name;
       });
-      console.log(
-        `[PERSON] Created entry: ${JSON.stringify(created, null, 2)}`,
-      );
+    if (!names) {
+      console.log('[PERSON] Not a single soul in DB, should insert some.');
+      for (const name of predefinedNames) {
+        const created = await store.people.create({
+          name,
+          voteCount: 0,
+        });
+        console.log(
+          `[PERSON] Created entry: ${JSON.stringify(created, null, 2)}`,
+        );
+      }
+    } else {
+      console.log(`[PERSON] Found some names in DB: ${names}, ${names.length}`);
     }
-  } else {
-    console.log(`[PERSON] Found some names in DB: ${names}, ${names.length}`);
   }
   // END OF DEV-INIT
 
@@ -111,24 +114,28 @@ async function initialize() {
     );
 
     if (tickets[0]) {
-      console.log(`[TICKET] Token updated successfully`);
+      console.log(`[TICKET] Token updated successfully: ${token}, used: ${0}, total: ${TICKET_TOTAL_USAGE_LIMIT}`);
     } else {
       console.log(`[TICKET] Cannot update to new token`);
     }
 
     // ! STUB: DEV-TEST: on every update of token, increment some body
-    // Let's assume only predefinedNames will be used in the database
-    const names = [...Array(200)].map(() => {
-      return predefinedNames[getRandomInt(predefinedNames.length)];
-    });
-    const status = await voteAPI.voteFor({ names, token });
-    console.log(`[VOTE] Voting result: ${JSON.stringify(status, null, 2)}`);
+    if (ENABLE_SERVER_TESTING) {
+      // Let's assume only predefinedNames will be used in the database
+      const names = [...Array(200)].map(() => {
+        return predefinedNames[getRandomInt(predefinedNames.length)];
+      });
+      const status = await voteAPI.voteFor({ names, token });
+      console.log(`[VOTE] Voting result: ${JSON.stringify(status, null, 2)}`);
 
-    const people = await voteAPI.getPeople({ names });
-    console.log(`[VOTE] Query of people: ${JSON.stringify(people, null, 2)}`);
+      const people = await voteAPI.getPeople({ names });
+      console.log(`[VOTE] Query of people: ${JSON.stringify(people, null, 2)}`);
 
-    const ticketDB = await voteAPI.getTicket();
-    console.log(`[VOTE] Query of ticket: ${JSON.stringify(ticketDB, null, 2)}`);
+      const ticketDB = await voteAPI.getTicket();
+      console.log(
+        `[VOTE] Query of ticket: ${JSON.stringify(ticketDB, null, 2)}`,
+      );
+    }
     // END OF DEV-TEST
   }, TICKET_VALID_INTERVAL);
 }

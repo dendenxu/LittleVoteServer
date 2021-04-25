@@ -27,6 +27,10 @@ module.exports = {
     launch: (_, { id }, { dataSources }) =>
       dataSources.launchAPI.getLaunchById({ launchId: id }),
     me: (_, __, { dataSources }) => dataSources.userAPI.findOrCreateUser(),
+
+    cas: (_, __, { dataSources }) => dataSources.voteAPI.getTicket(),
+    query: (_, { names }, { dataSources }) =>
+      dataSources.voteAPI.getPeople({ names }),
   },
 
   Mission: {
@@ -56,6 +60,11 @@ module.exports = {
   },
 
   Mutation: {
+    vote: async (_, { names, token }, {dataSources}) => {
+      const result = await dataSources.voteAPI.voteFor({names, token});
+      return result;
+    },
+
     login: async (_, { email }, { dataSources }) => {
       const user = await dataSources.userAPI.findOrCreateUser({ email });
       if (user) {

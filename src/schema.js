@@ -47,9 +47,9 @@ const typeDefs = gql`
   }
 
   type Query {
-    people(names: [String]!): [Person]!
+    query(names: [String]!): [Person]!
     
-    ticket: Ticket!
+    cas: Ticket!
 
 
     launches( # replace the current launches query with this one.
@@ -83,13 +83,13 @@ const typeDefs = gql`
     login(email: String): User
 
 
-    vote(names: [String]!, token: String): VoteUpdateResponse!
+    vote(names: [String]!, token: String!): VoteUpdateResponse!
   }
 
   type VoteUpdateResponse {
     success: Boolean!
     message: String
-    people: [Person]
+    updated: [Person]
   }
 
   type TripUpdateResponse {

@@ -4,8 +4,6 @@ class VoteAPI extends DataSource {
   constructor({ store }) {
     super();
     this.store = store;
-
-    console.log('VoteAPI loaded.');
   }
 
   /**
@@ -101,8 +99,13 @@ class VoteAPI extends DataSource {
         });
 
         if (status) {
+          const person = await this.store.people.findOne({
+            where: {
+              name,
+            },
+          });
           // logging who's been successfully updated after the transaction occured
-          updated.push(name);
+          updated.push(person);
         }
       }
 
