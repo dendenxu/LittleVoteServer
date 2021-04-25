@@ -49,45 +49,62 @@ class VoteAPI extends DataSource {
       message: '',
       updated: [],
     };
+    const updated = [];
     try {
-      const updated = await this.store.db.transaction(async t => {
-        const ticket = await this.store.ticket.findByPk(0, { transaction: t });
-        if (ticket.token !== token) {
-          throw new Error(
-            `User token(${token}) doesn't match with db token(${ticket.token})`,
-          );
-        }
+      for (const name of names) {
+        const status = await this.store.db.transaction(async t => {
+          const ticket = await this.store.ticket.findByPk(0, {
+            transaction: t,
+          });
 
-        console.log('[VOTE] Token valid, updating names');
-        const updated = [];
-        // SQLite doesn't support returned updated rows
-        for (const name of names) {
+          if (ticket.token !== token) {
+            throw new Error(
+              `User token(${token}) doesn't match with db token(${ticket.token})`,
+            );
+          }
+
+          // limit on the ticket should be enforced
+          if (ticket.used === ticket.total) {
+            // throw an error and ROLLBACK
+            throw new Error(`Token(${token}) has been used up`);
+          }
+
+          console.log(`[VOTE] Token valid, updating ${name}'s vote count`);
+
           const res = await this.store.people.increment('voteCount', {
             by: 1,
             where: { name },
             transaction: t,
           });
           if (res[0]) {
-            if (ticket.used === ticket.total) {
-              // throw an error and ROLLBACK
-              throw new Error(`Token(${token}) has been used up)`);
-            } else {
-              // limit on the ticket should be enforced
-              await this.store.ticket.increment('used', {
-                by: 1,
-                where: { id: '0' },
-                transaction: t,
-              });
-              console.log('[VOTE] Token incremented');
-              updated.push(name);
-            }
+            console.log('[VOTE] Vote count incremented');
+
+            // now we're in a transaction and we've validated the token
+            await this.store.ticket.increment('used', {
+              by: 1,
+              where: { id: '0' },
+              transaction: t,
+            });
+            console.log(
+              `[VOTE] Token usage incremented, now: ${
+                ticket.used + 1
+              }, total: ${ticket.total}`,
+            );
+            console.log(`[VOTE] Successfully updated vote count for: ${name}`);
+            return true;
+          } else {
+            console.log(
+              `[VOTE] The name '${name}' doesn't exist in the DB, but we'll continue`,
+            );
+            return false;
           }
+        });
+
+        if (status) {
+          // logging who's been successfully updated after the transaction occured
+          updated.push(name);
         }
-        console.log(
-          `[VOTE] Successfully updated ${JSON.stringify(updated, null, 2)}`,
-        );
-        return updated;
-      });
+      }
 
       // If the execution reaches this line, the transaction has been committed successfully
       // `result` is whatever was returned from the transaction callback (the `user`, in this case)
@@ -102,7 +119,7 @@ class VoteAPI extends DataSource {
       // The transaction has already been rolled back automatically by Sequelize!
       result.success = false;
       result.message = error.message;
-      result.updated = [];
+      result.updated = updated;
     }
     return result;
   }

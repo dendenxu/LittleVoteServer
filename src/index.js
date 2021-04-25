@@ -118,14 +118,15 @@ async function initialize() {
 
     // ! STUB: DEV-TEST: on every update of token, increment some body
     // Let's assume only predefinedNames will be used in the database
-    const ind = getRandomInt(predefinedNames.length);
-    const name = predefinedNames[ind];
-    const status = await voteAPI.voteFor({ names: [name], token });
+    const names = [...Array(200)].map(() => {
+      return predefinedNames[getRandomInt(predefinedNames.length)];
+    });
+    const status = await voteAPI.voteFor({ names, token });
     console.log(`[VOTE] Voting result: ${JSON.stringify(status, null, 2)}`);
-    
-    const people = await voteAPI.getPeople({ names: [name] });
+
+    const people = await voteAPI.getPeople({ names });
     console.log(`[VOTE] Query of people: ${JSON.stringify(people, null, 2)}`);
-    
+
     const ticketDB = await voteAPI.getTicket();
     console.log(`[VOTE] Query of ticket: ${JSON.stringify(ticketDB, null, 2)}`);
     // END OF DEV-TEST

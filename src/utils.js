@@ -38,7 +38,7 @@ module.exports.createStore = () => {
     dialect: 'sqlite',
     storage: './store.sqlite',
     // operatorsAliases,
-    // logging: false,
+    logging: false,
   });
 
   const ticket = db.define('ticket', {

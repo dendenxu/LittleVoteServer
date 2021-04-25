@@ -37,3 +37,10 @@
 1. 不限语言，请使用`GraphQL`设计相应的 API
 2. 投票数据需要持久化
 3. 请尽可能的提升性能，注意程序可能存在的条件竞争，扩展性等问题
+
+
+
+## 验证
+
+In the middle of a `token` update, the voting failed as expected:
+
