@@ -121,7 +121,7 @@ class VoteAPI extends DataSource {
       // If the execution reaches this line, an error occurred.
       // The transaction has already been rolled back automatically by Sequelize!
       result.success = false;
-      result.message = error.message;
+      result.message = `Voting interrupted by error: ${error.message}`;
       result.updated = updated;
     }
     return result;
