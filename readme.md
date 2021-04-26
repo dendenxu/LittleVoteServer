@@ -47,7 +47,7 @@ Now go to http://localhost:4000 to see a `GraphQL` playground like this:
 
 ![image-20210427000948425](readme.assets/image-20210427000948425.png)
 
-If see errors regarding the database in the log you should set it up first.
+If see errors regarding the database in the log, you should set up `postgres` first. Refer to the previous subsection.
 
 To change the port or ticket valid interval or ticket usage limit, open `src/index.js` and change `SERVER_PORT`, `TICKET_VALID_INTERVAL`, `TICKET_TOTAL_USAGE_LIMIT`
 
@@ -418,7 +418,7 @@ It creates `50` virtual users to concurrently send query and mutation to the ser
 
 
 
-Requests are send in this order:
+Requests are sent in this order:
 
 1. Query the `voteCount` for `["James", "John", "Robert", "Michael", "William"]`. Five people.
 2. Query and update the `ticket` for this virtual user, so that it can be reused immediately.
