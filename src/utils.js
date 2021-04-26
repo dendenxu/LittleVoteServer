@@ -1,39 +1,40 @@
 const Sequelize = require('sequelize');
 
+// NOTE: Install and create the progress database before trying to connect to it
+// Linux:
 // sudo -u postgres createuser -P -s xzdd
-// createdb LittleVoteDB -U xzdd
-const database = "LittleVoteDB"
-const username = "xzdd"
-const password = "xzdd" // ENTER YOUR PASSWORD HERE
-const host = "localhost"
-const port = "5432"
+// createdb littlevotedb -U xzdd
+//
+// Windows:
+// psql -U postgres # to login the database
+// create user xzdd with encrypted password 'xzdd';
+// create database littlevotedb owner xzdd;
+
+const database = 'littlevotedb';
+const username = 'xzdd';
+const password = 'xzdd'; // ENTER YOUR PASSWORD HERE
+const host = 'localhost';
+const port = '5432'; // default
 
 module.exports.createStore = () => {
-  // const Op = SQL.Op;
-  // const operatorsAliases = {
-  //   $in: Op.in,
-  // };
-
   const db = new Sequelize(database, username, password, {
     dialect: 'postgres',
     host,
     port,
-    // storage: './store.sqlite',
-    // operatorsAliases,
     logging: false,
-//    transactionType: 'IMMEDIATE',
-    timestamps: false,
+    // timestamps: false,
+    updatedAt: false,
+    createdAt: false,
   });
-  
+
   const ticket = db.define('ticket', {
+    // should have a validate, removed for performance reason
     id: {
       type: Sequelize.INTEGER,
       defaultValue: '0',
       allowNull: false,
       primaryKey: true,
-//      validate: {
-//        equals: '0',
-//      },
+      equals: '0',
     },
     createdAt: Sequelize.DATE,
     updatedAt: Sequelize.DATE,
@@ -42,15 +43,6 @@ module.exports.createStore = () => {
       // this can only increment
       type: Sequelize.INTEGER,
       defaultValue: '0',
-      // validate: {
-      //   isValid(value) {
-      //     if (parseInt(value) > parseInt(this.total)) {
-      //       throw new Error(
-      //         'Used count of ticket must be smaller than total usable count.',
-      //       );
-      //     }
-      //   },
-      // },
     },
     total: Sequelize.INTEGER,
   });
@@ -61,7 +53,11 @@ module.exports.createStore = () => {
       primaryKey: true,
       autoIncrement: true,
     },
-    name: Sequelize.STRING,
+    name: {
+      type: Sequelize.STRING,
+      unique: true,
+      allowNull: false,
+    },
     voteCount: Sequelize.INTEGER,
   });
 
