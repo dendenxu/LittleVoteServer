@@ -1,46 +1,50 @@
-# Little Vote
+# Little Vote Server
 
-## 概述
+## Requirements
 
-设计一个投票程序，用户可以使用该程序给指定的用户名投票，同时用户也可以查询指定用户名的当前票数。
-
-1. 该程序需要每 2 秒随机生成一个`ticket`，由服务端产生，并且提供相应的接口获取该`ticket`，每个`ticket`的有效时间是从服务端生成到下一次生成新的`ticket`为止
-2. 在`ticket`的有效期间内，支持给任意用户投任意次数的票。并且每个`ticket`的使用次数存在一个上限
-
-## 接口设计
-
-1. 投票`vote`
-
-   ```text
-   输入：指定的用户名（支持多个）
-   输出：ticket
-   行为：检查ticket是否合法，合法则将指定的（多个）用户的票数＋1
-   输出：投票结果
-   ```
-
-2. 查询`query`
-
-   ```text
-   输⼊: 指定的⽤户名
-   输出：指定⽤户的当前票数
-   ```
-
-3. 获取票据`cas`
-
-   ```text
-   输⼊：⽆
-   输出：当前的服务器票据
-   ```
-
-## 要求
-
-1. 不限语言，请使用`GraphQL`设计相应的 API
-2. 投票数据需要持久化
-3. 请尽可能的提升性能，注意程序可能存在的条件竞争，扩展性等问题
+> ## 概述
+>
+> 设计一个投票程序，用户可以使用该程序给指定的用户名投票，同时用户也可以查询指定用户名的当前票数。
+>
+> 1. 该程序需要每 2 秒随机生成一个`ticket`，由服务端产生，并且提供相应的接口获取该`ticket`，每个`ticket`的有效时间是从服务端生成到下一次生成新的`ticket`为止
+> 2. 在`ticket`的有效期间内，支持给任意用户投任意次数的票。并且每个`ticket`的使用次数存在一个上限
+>
+> ## 接口设计
+>
+> 1. 投票`vote`
+>
+>     ```text
+>     输入：指定的用户名（支持多个）
+>     输出：ticket
+>     行为：检查ticket是否合法，合法则将指定的（多个）用户的票数＋1
+>     输出：投票结果
+>     ```
+>
+> 2. 查询`query`
+>
+>     ```text
+>     输⼊: 指定的⽤户名
+>     输出：指定⽤户的当前票数
+>     ```
+>
+> 3. 获取票据`cas`
+>
+>     ```text
+>     输⼊：⽆
+>     输出：当前的服务器票据
+>     ```
+>
+> ## 要求
+>
+> 1. 不限语言，请使用`GraphQL`设计相应的 API
+> 2. 投票数据需要持久化
+> 3. 请尽可能的提升性能，注意程序可能存在的条件竞争，扩展性等问题
 
 
 
 ## Quick Start
+
+### Dependency
 
 You'll need `node`, `npm`, `postgresql` to deploy the server.
 
@@ -52,7 +56,9 @@ And `k6` on [this site](https://k6.io/docs/getting-started/installation/)
 
 And you'll need `k6` to do the load test.
 
+`node` packages are defined in `package.json` and can be installed by `npm install`
 
+### Database
 
 To setup `postgres` for this server:
 
@@ -67,6 +73,8 @@ node ./src/test/addnames.js # to insert some dummy names into the database
 
 To change the database configuration this server uses, open `src/utils.js` and edit `username`, `password` and stuff.
 
+### Ignition
+
 Use this script to clone and run the server.
 
 ```shell
@@ -77,23 +85,129 @@ npm install # to install packages defined in package.json
 npm start # to start the server, running on port 4000
 ```
 
-If see errors regarding the database you should set it up first.
+Now go to http://localhost:4000 to see a `GraphQL` playground like this:
+
+![image-20210427000948425](readme.assets/image-20210427000948425.png)
+
+If see errors regarding the database in the log you should set it up first.
 
 To change the port or ticket valid interval or ticket usage limit, open `src/index.js` and change `SERVER_PORT`, `TICKET_VALID_INTERVAL`, `TICKET_TOTAL_USAGE_LIMIT`
 
-
+### Test
 
 To run the test a small smoke test:
 
 ```shell
-k6 run --iterations 1 --vus 1 .\src\test\graph.js
+k6 run --iterations 1 --vus 1 ./src/test/graph.js
 ```
 
 To run a predefined load test:
 
 ```shell
-k6 run --duration 20s --vus 50 .\src\test\graph.js
-# Or just k6 run .\src\test\graph.js since they're already defined in graph.js
+k6 run --duration 20s --vus 50 ./src/test/graph.js
+# Or just k6 run ./src/test/graph.js since they're already defined in graph.js
+```
+
+
+
+## Interface
+
+### Definition
+
+See `src/schema.js` for the `GraphQL` definition.
+
+Here's a copy of the file:
+
+```javascript
+const { gql } = require('apollo-server');
+
+const typeDefs = gql`
+
+  type Person {
+    id: ID!
+    name: String!
+    voteCount: Int!
+  }
+
+  type Ticket {
+    token: String! # shoule be a random ticket
+    used: Int!
+    total: Int!
+  }
+
+  type Query {
+    query(names: [String]!): [Person]!
+    
+    cas: Ticket!
+  }
+
+  type Mutation {
+    vote(names: [String]!, token: String!): VoteUpdateResponse!
+  }
+
+  type VoteUpdateResponse {
+    success: Boolean!
+    message: String
+    updated: [Person] # array of Person modified by this mutation, no need to fetch again
+  }
+`;
+
+module.exports = typeDefs;
+```
+
+### Example
+
+Example:
+
+```graphql
+# Write your query or mutation here
+query VoteCountAndCAS {
+  query(names: ["James", "John", "Robert", "Michael", "William"]) {
+    name
+    voteCount
+  }
+  cas {
+    token
+    used
+    total
+  }
+}
+```
+
+Example Result:
+
+```json
+{
+  "data": {
+    "query": [
+      {
+        "name": "James",
+        "voteCount": 3989
+      },
+      {
+        "name": "John",
+        "voteCount": 3630
+      },
+      {
+        "name": "Robert",
+        "voteCount": 3335
+      },
+      {
+        "name": "Michael",
+        "voteCount": 3102
+      },
+      {
+        "name": "William",
+        "voteCount": 2910
+      }
+    ],
+    "cas": {
+      "token": "ac6795ca428bc8bcfb5a22211833088d",
+      "used": 0,
+      "total": 100
+    }
+  }
+}
 ```
 
 
