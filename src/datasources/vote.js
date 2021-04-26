@@ -1,4 +1,11 @@
 const { DataSource } = require('apollo-datasource');
+
+class TolerableError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = this.constructor.name;
+  }
+}
 class VoteAPI extends DataSource {
   constructor({ store }) {
     super();
@@ -52,16 +59,8 @@ class VoteAPI extends DataSource {
             returning: true,
           });
 
-          // Put this outside and we get a performance boost, why?
-          const ticket = await this.store.tickets.findByPk(0, {
-            transaction: t,
-            lock: true,
-          });
-
           if (!ticketdb[0][0][0]) {
-            throw new Error(
-              `Token(${token}) doesn't match with dbtoken(${ticket.token})`,
-            );
+            throw new Error(`token(${token}) doesn't match with token in DB`);
           }
 
           const persondb = await this.store.people.increment('voteCount', {
@@ -72,11 +71,9 @@ class VoteAPI extends DataSource {
           });
 
           if (!persondb[0][0][0]) {
-            await t.rollback();
-            console.error(
-              `The name '${name}' doesn't exist in the DB, but we'll continue`,
+            throw new TolerableError(
+              `name '${name}' doesn't exist in the DB, but we'll continue`,
             );
-            continue;
           }
 
           // If the execution reaches this line, no errors were thrown.
@@ -93,15 +90,20 @@ class VoteAPI extends DataSource {
           // logging who's been successfully updated after the transaction occured
           updated.push(persondb[0][0][0]);
         } catch (error) {
+          // ! for whatever reason, if the block encounters error, it should be rolled back
+          // ! but the whole loop may or may not be terminated immediately
           // If the execution reaches this line, an error was thrown.
           // We rollback the transaction.
           await t.rollback();
-          throw error; // break the loop
-        }
-      }
 
-      // If the execution reaches this line, the transaction has been committed successfully
-      // `result` is whatever was returned from the transaction callback (the `user`, in this case)
+          if (error instanceof TolerableError) {
+            console.log(`[VOTE] Warning: ${error}`);
+            continue; // continue execution
+          } else {
+            throw error; // break the loop
+          } // if
+        } // catch
+      } // for-loop
 
       result.success = names.length === updated.length;
       result.message = result.success
@@ -109,12 +111,12 @@ class VoteAPI extends DataSource {
         : 'Not all candidates were updated.';
       result.updated = updated;
     } catch (error) {
-      // If the execution reaches this line, an error occurred.
-      // The transaction has already been rolled back automatically by Sequelize!
+      // ! error here means we've got terminated by some serious error
+      // token mismatch, token used up or database internal error and such
       result.success = false;
       result.message = `Voting interrupted by error: ${error.message}`;
       result.updated = updated;
-      console.error(`[VOTE] Error during voting: ${error}`);
+      console.error(`[VOTE] Error during voting: ${error.message}`);
     }
     return result;
   }
