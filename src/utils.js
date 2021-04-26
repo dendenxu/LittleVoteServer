@@ -1,20 +1,30 @@
 const Sequelize = require('sequelize');
 
+// sudo -u postgres createuser -P -s xzdd
+// createdb LittleVoteDB -U xzdd
+const database = "LittleVoteDB"
+const username = "xzdd"
+const password = "xzdd" // ENTER YOUR PASSWORD HERE
+const host = "localhost"
+const port = "5432"
+
 module.exports.createStore = () => {
   // const Op = SQL.Op;
   // const operatorsAliases = {
   //   $in: Op.in,
   // };
 
-  const db = new Sequelize('database', 'username', 'password', {
-    dialect: 'sqlite',
-    storage: './store.sqlite',
+  const db = new Sequelize(database, username, password, {
+    dialect: 'postgres',
+    host,
+    port,
+    // storage: './store.sqlite',
     // operatorsAliases,
     logging: false,
 //    transactionType: 'IMMEDIATE',
     timestamps: false,
   });
-
+  
   const ticket = db.define('ticket', {
     id: {
       type: Sequelize.INTEGER,
