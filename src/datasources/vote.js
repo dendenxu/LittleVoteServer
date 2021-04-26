@@ -23,7 +23,7 @@ class VoteAPI extends DataSource {
    */
 
   async getTicket() {
-    const ticket = await this.store.ticket.findByPk(0);
+    const ticket = await this.store.tickets.findByPk(0);
     return {
       token: ticket.token,
       used: ticket.used,
@@ -55,7 +55,7 @@ class VoteAPI extends DataSource {
           //   isolationLevel: Transaction.ISOLATION_LEVELS.REPEATABLE_READ
           // },
           async t => {
-          const ticket = await this.store.ticket.findByPk(0, {
+          const ticket = await this.store.tickets.findByPk(0, {
             transaction: t,
           });
 
@@ -82,7 +82,7 @@ class VoteAPI extends DataSource {
             console.log('[VOTE] Vote count incremented');
 
             // now we're in a transaction and we've validated the token
-            await this.store.ticket.increment('used', {
+            await this.store.tickets.increment('used', {
               by: 1,
               where: { id: '0' },
               transaction: t,

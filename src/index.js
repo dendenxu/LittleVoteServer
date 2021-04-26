@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const store = createStore();
 const VoteAPI = require('./datasources/vote');
 
-const TICKET_VALID_INTERVAL = 2000; // ms
+const TICKET_VALID_INTERVAL = 5000; // ms
 const TICKET_TOTAL_USAGE_LIMIT = 100;
 
 const server = new ApolloServer({
@@ -20,10 +20,6 @@ const server = new ApolloServer({
 });
 
 var ticketTimer;
-
-function getRandomInt(max) {
-  return Math.floor(Math.random() * max); // (inclusive of 0, but not 1)
-}
 
 async function initialize() {
   await store.db.sync();
@@ -45,7 +41,7 @@ async function initialize() {
 
   console.log(`[PERSON] Found some names in DB: ${names}, ${names.length}`);
 
-  var ticket = await store.ticket.findByPk(0, {
+  var ticket = await store.tickets.findByPk(0, {
     plain: true,
     attributes: ['token', 'used', 'total'],
   });
@@ -53,7 +49,7 @@ async function initialize() {
   if (!ticket) {
     const token = crypto.randomBytes(16).toString('hex');
 
-    ticket = await store.ticket.create({
+    ticket = await store.tickets.create({
       token,
       used: 0,
       total: TICKET_TOTAL_USAGE_LIMIT,
@@ -76,7 +72,7 @@ async function initialize() {
     console.log(`[TICKET] Generating new ticket: ${token}`);
 
     // ! we assume this.TICKET_TOTAL_USAGE_LIMIT won't change during one application run
-    const tickets = await store.ticket.update(
+    const tickets = await store.tickets.update(
       { token, used: 0, total: TICKET_TOTAL_USAGE_LIMIT },
       { where: { id: 0 } },
     );
