@@ -11,6 +11,8 @@ module.exports.createStore = () => {
     storage: './store.sqlite',
     // operatorsAliases,
     logging: false,
+//    transactionType: 'IMMEDIATE',
+    timestamps: false,
   });
 
   const ticket = db.define('ticket', {
@@ -19,9 +21,9 @@ module.exports.createStore = () => {
       defaultValue: '0',
       allowNull: false,
       primaryKey: true,
-      validate: {
-        equals: '0',
-      },
+//      validate: {
+//        equals: '0',
+//      },
     },
     createdAt: Sequelize.DATE,
     updatedAt: Sequelize.DATE,
