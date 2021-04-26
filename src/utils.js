@@ -65,29 +65,5 @@ module.exports.createStore = () => {
     voteCount: Sequelize.INTEGER,
   });
 
-  db.sync().then(() => {
-    console.log('[DATABASE] Database has been synced.');
-  });
-
-  db.authenticate()
-    .then(() => {
-      console.log(
-        '[DATABASE] Connection to database has been established successfully.',
-      );
-    })
-    .catch(err => {
-      console.error('[DATABASE] Unable to connect to the database:', err);
-    });
-
-  db.getQueryInterface()
-    .showAllSchemas()
-    .then(rows => {
-      console.log(JSON.stringify(rows, null, 2));
-    });
-
-  // db.query('SELECT name FROM people').then(rows => {
-  //   console.log(JSON.stringify(rows, null, 2));
-  // });
-
   return { db, ticket, people };
 };

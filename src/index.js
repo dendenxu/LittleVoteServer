@@ -57,6 +57,17 @@ async function initialize() {
   }
   // ! END OF DEV-INIT
 
+  await store.db.sync();
+  console.log('[DATABASE] Database has been synced.');
+
+  await store.db.authenticate();
+  console.log(
+    '[DATABASE] Connection to database has been established successfully.',
+  );
+
+  const rows = await store.db.getQueryInterface();
+  console.log(JSON.stringify(rows, null, 2));
+
   var ticket = await store.ticket.findByPk(0, {
     plain: true,
     attributes: ['token', 'used', 'total'],
@@ -97,7 +108,9 @@ async function initialize() {
     );
 
     if (tickets[0]) {
-      console.log(`[TICKET] Token updated successfully: ${token}, used: ${0}, total: ${TICKET_TOTAL_USAGE_LIMIT}`);
+      console.log(
+        `[TICKET] Token updated successfully: ${token}, used: ${0}, total: ${TICKET_TOTAL_USAGE_LIMIT}`,
+      );
     } else {
       console.log(`[TICKET] Cannot update to new token`);
     }
