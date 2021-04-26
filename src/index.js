@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const store = createStore();
 const VoteAPI = require('./datasources/vote');
 
-const TICKET_VALID_INTERVAL = 5000; // ms
+const TICKET_VALID_INTERVAL = 2000; // ms
 const TICKET_TOTAL_USAGE_LIMIT = 100;
 
 const server = new ApolloServer({

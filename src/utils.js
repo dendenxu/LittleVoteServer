@@ -70,22 +70,22 @@ module.exports.createStore = () => {
     voteCount: DataTypes.INTEGER,
   });
 
-  db.sync()
-    .then(() => {
-      db.getQueryInterface().addConstraint('tickets', {
+  db.sync().then(() => {
+    db.getQueryInterface()
+      .addConstraint('tickets', {
         type: 'check',
         name: 'ticket_count',
         fields: ['used'],
         where: {
           used: {
-            [Op.lt]: Sequelize.col('total'),
+            [Op.lte]: Sequelize.col('total'),
           },
         },
+      })
+      .catch(e => {
+        console.error(`[DATABASE] Error: ${e}`);
       });
-    })
-    .catch(e => {
-      console.error(`[DATABASE] Error: ${e}`);
-    });
+  });
 
   return { db, tickets, people };
 };

@@ -9,10 +9,14 @@ export let options = {
 };
 
 const BASE_URL = 'http://localhost:4000';
-var names = ["James", "John", "Robert", "Michael", "William"];
-var token = "2fcecaec0a2fd633415da5d8e2ec22c9"; 
+var names = ['James', 'John', 'Robert', 'Michael', 'William'];
+var token = '2fcecaec0a2fd633415da5d8e2ec22c9';
 export default () => {
-	const peopleQuery = `
+  let headers = {
+    'Content-Type': 'application/json',
+  };
+
+  const peopleQuery = `
 # Write your query or mutation here
 query People {
   	query(names: ${JSON.stringify(names)}) {
@@ -21,8 +25,18 @@ query People {
   	}
 }
 	`;
+  let peopleResp = http.post(
+    `${BASE_URL}`,
+    JSON.stringify({ query: peopleQuery }),
+    { headers },
+  );
+  check(peopleResp, {
+    'Query names successful': resp => {
+      return resp.status === 200;
+    },
+  });
 
-	const ticketQuery = `
+  const ticketQuery = `
 query Ticket {
     cas {
         token
@@ -30,35 +44,14 @@ query Ticket {
         total
     }
 }
-	`;
-
-	const voteForMutation = `
-mutation Vote {
-    vote(names: ${JSON.stringify(names)}, token: ${JSON.stringify(token)}) {
-        success
-        message
-        updated {
-            name
-            voteCount
-        }
-    }
-}
-	`;
-
-  let headers = {
-      'Content-Type': 'application/json',
-  };
-
-  let peopleResp = http.post(`${BASE_URL}`, JSON.stringify({query: peopleQuery}), {headers});
-  check(peopleResp, {
-    'Query names successful': (resp) => {
-      return resp.status === 200;
-    },
-  });
-
-  let ticketResp = http.post(`${BASE_URL}`, JSON.stringify({query: ticketQuery}), {headers});
+  `;
+  let ticketResp = http.post(
+    `${BASE_URL}`,
+    JSON.stringify({ query: ticketQuery }),
+    { headers },
+  );
   check(ticketResp, {
-    'Query ticket successful': (resp) => {
+    'Query ticket successful': resp => {
       return resp.status === 200;
     },
   });
@@ -66,14 +59,30 @@ mutation Vote {
   let newTicket = jsonData.data.cas.token;
   if (token !== newTicket) {
     console.log(`Setting new token: ${newTicket}, old: ${token}`);
-    token = newTicket
+    token = newTicket;
   } else {
     console.log(`Token ${token} is currently valid`);
-  } 
+  }
 
-  const voteResp = http.post(`${BASE_URL}`, JSON.stringify({query: voteForMutation}), {headers});
+  const voteForMutation = `
+  mutation Vote {
+    vote(names: ${JSON.stringify(names)}, token: ${JSON.stringify(token)}) {
+      success
+      message
+      updated {
+        name
+        voteCount
+      }
+    }
+  }
+  `;
+  const voteResp = http.post(
+    `${BASE_URL}`,
+    JSON.stringify({ query: voteForMutation }),
+    { headers },
+  );
   check(voteResp, {
-    'Voting names successfully': (resp) => {
+    'Voting names successfully': resp => {
       console.log(`Voting result: ${JSON.stringify(JSON.parse(resp.body))}`);
       return resp.status === 200;
     },
@@ -81,4 +90,3 @@ mutation Vote {
 
   sleep(0.1);
 };
-

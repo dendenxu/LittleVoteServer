@@ -1,5 +1,4 @@
 const { DataSource } = require('apollo-datasource');
-const { Transaction } = require('sequelize');
 class VoteAPI extends DataSource {
   constructor({ store }) {
     super();
@@ -50,66 +49,59 @@ class VoteAPI extends DataSource {
     const updated = [];
     try {
       for (const name of names) {
-        const status = await this.store.db.transaction(
-          // {
-          //   isolationLevel: Transaction.ISOLATION_LEVELS.REPEATABLE_READ
-          // },
-          async t => {
-          const ticket = await this.store.tickets.findByPk(0, {
+        const t = await this.store.db.transaction();
+        try {
+          const ticketdb = await this.store.tickets.increment('used', {
+            by: 1,
+            where: { token },
             transaction: t,
+            returning: true,
           });
 
-          if (ticket.token !== token) {
+          // Put this outside and we get a performance boost, why?
+          const ticket = await this.store.tickets.findByPk(0, {
+            transaction: t,
+            lock: true,
+          });
+
+          if (!ticketdb[0][0][0]) {
             throw new Error(
-              `User token(${token}) doesn't match with db token(${ticket.token})`,
+              `Token(${token}) doesn't match with dbtoken(${ticket.token})`,
             );
           }
 
-          // // limit on the ticket should be enforced
-          // if (ticket.used === ticket.total) {
-          //  // throw an error and ROLLBACK
-          //  throw new Error(`Token(${token}) has been used up`);
-          // }
-
-          console.log(`[VOTE] Token valid, updating ${name}'s vote count`);
-
-          const res = await this.store.people.increment('voteCount', {
+          const persondb = await this.store.people.increment('voteCount', {
             by: 1,
             where: { name },
             transaction: t,
+            returning: true,
           });
-          if (res[0]) {
-            console.log('[VOTE] Vote count incremented');
 
-            // now we're in a transaction and we've validated the token
-            await this.store.tickets.increment('used', {
-              by: 1,
-              where: { id: '0' },
-              transaction: t,
-            });
-            console.log(
-              `[VOTE] Token usage incremented, now: ${
-                ticket.used + 1
-              }, total: ${ticket.total}`,
+          if (!persondb[0][0][0]) {
+            await t.rollback();
+            console.error(
+              `The name '${name}' doesn't exist in the DB, but we'll continue`,
             );
-            console.log(`[VOTE] Successfully updated vote count for: ${name}`);
-            return true;
-          } else {
-            console.log(
-              `[VOTE] The name '${name}' doesn't exist in the DB, but we'll continue`,
-            );
-            return false;
           }
-        });
 
-        if (status) {
-          const person = await this.store.people.findOne({
-            where: {
-              name,
-            },
-          });
+          // If the execution reaches this line, no errors were thrown.
+          // We commit the transaction.
+          await t.commit();
+
+          console.log(
+            `[VOTE] Updated ticket: ${JSON.stringify(ticketdb[0][0][0])}`,
+          );
+          console.log(
+            `[VOTE] Updated person: ${JSON.stringify(persondb[0][0][0])}`,
+          );
+          console.log(`[VOTE] Successfully updated vote count for: ${name}`);
           // logging who's been successfully updated after the transaction occured
-          updated.push(person);
+          updated.push(persondb[0][0][0]);
+        } catch (error) {
+          // If the execution reaches this line, an error was thrown.
+          // We rollback the transaction.
+          await t.rollback();
+          throw error; // break the loop
         }
       }
 
@@ -127,6 +119,7 @@ class VoteAPI extends DataSource {
       result.success = false;
       result.message = `Voting interrupted by error: ${error.message}`;
       result.updated = updated;
+      console.error(`[VOTE] Error during voting: ${error}`);
     }
     return result;
   }
