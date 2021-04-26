@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const store = createStore();
 const VoteAPI = require('./datasources/vote');
 
+const SERVER_PORT = 4000;
 const TICKET_VALID_INTERVAL = 2000; // ms
 const TICKET_TOTAL_USAGE_LIMIT = 100;
 
@@ -89,14 +90,18 @@ async function initialize() {
 
 initialize()
   .then(() => {
-    server.listen().then(() => {
-      console.log(`
+    server
+      .listen({
+        port: SERVER_PORT,
+      })
+      .then(() => {
+        console.log(`
 [MESSAGE]
 Server is running!
 Listening on port 4000
 Explore!
     `);
-    });
+      });
   })
   .catch(e => {
     console.error(`[INIT] Error: ${e}`);

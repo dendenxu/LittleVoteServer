@@ -40,6 +40,64 @@
 
 
 
+## Quick Start
+
+You'll need `node`, `npm`, `postgresql` to deploy the server.
+
+For `node` and `npm`, refer to [this site](https://nodejs.org/en/download) to  install it on whatever platform you're on.
+
+For `postgresql`, refer to [this site](https://www.postgresql.org/download/)
+
+And `k6` on [this site](https://k6.io/docs/getting-started/installation/)
+
+And you'll need `k6` to do the load test.
+
+
+
+To setup `postgres` for this server:
+
+```shell
+sudo -u postgres createuser -P -s xzdd # to create the user for postgres
+# YOU'LL BE PROMPTED TO ENTER THE PASSWORD HERE
+# WE USED xzdd FOR PASSWORD IN OUR DB
+# if you're on windows, use createuser -P -U postgres xzdd
+createdb littlevotedb -U xzdd # to create the database
+node ./src/test/addnames.js # to insert some dummy names into the database
+```
+
+To change the database configuration this server uses, open `src/utils.js` and edit `username`, `password` and stuff.
+
+Use this script to clone and run the server.
+
+```shell
+git clone https://github.com/dendenxu/LittleVoteServer.git # to clone this repo
+cd LittleVoteServer
+
+npm install # to install packages defined in package.json
+npm start # to start the server, running on port 4000
+```
+
+If see errors regarding the database you should set it up first.
+
+To change the port or ticket valid interval or ticket usage limit, open `src/index.js` and change `SERVER_PORT`, `TICKET_VALID_INTERVAL`, `TICKET_TOTAL_USAGE_LIMIT`
+
+
+
+To run the test a small smoke test:
+
+```shell
+k6 run --iterations 1 --vus 1 .\src\test\graph.js
+```
+
+To run a predefined load test:
+
+```shell
+k6 run --duration 20s --vus 50 .\src\test\graph.js
+# Or just k6 run .\src\test\graph.js since they're already defined in graph.js
+```
+
+
+
 ## Validation
 
 ### Functionality
