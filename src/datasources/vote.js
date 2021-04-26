@@ -1,5 +1,5 @@
 const { DataSource } = require('apollo-datasource');
-
+const { Transaction } = require('sequelize');
 class VoteAPI extends DataSource {
   constructor({ store }) {
     super();
@@ -50,7 +50,11 @@ class VoteAPI extends DataSource {
     const updated = [];
     try {
       for (const name of names) {
-        const status = await this.store.db.transaction(async t => {
+        const status = await this.store.db.transaction(
+          // {
+          //   isolationLevel: Transaction.ISOLATION_LEVELS.REPEATABLE_READ
+          // },
+          async t => {
           const ticket = await this.store.ticket.findByPk(0, {
             transaction: t,
           });
@@ -61,11 +65,11 @@ class VoteAPI extends DataSource {
             );
           }
 
-          // limit on the ticket should be enforced
-          if (ticket.used === ticket.total) {
-            // throw an error and ROLLBACK
-            throw new Error(`Token(${token}) has been used up`);
-          }
+          // // limit on the ticket should be enforced
+          // if (ticket.used === ticket.total) {
+          //  // throw an error and ROLLBACK
+          //  throw new Error(`Token(${token}) has been used up`);
+          // }
 
           console.log(`[VOTE] Token valid, updating ${name}'s vote count`);
 

@@ -1,5 +1,4 @@
-const Sequelize = require('sequelize');
-
+const { Sequelize, Op, Model, DataTypes } = require("sequelize");
 // NOTE: Install and create the progress database before trying to connect to it
 // Linux:
 // sudo -u postgres createuser -P -s xzdd
@@ -22,9 +21,10 @@ module.exports.createStore = () => {
     host,
     port,
     logging: false,
+    transactionType: "EXCLUSIVE",
     // timestamps: false,
-    updatedAt: false,
-    createdAt: false,
+    // updatedAt: false,
+    // createdAt: false,
   });
 
   const ticket = db.define('ticket', {
@@ -43,6 +43,15 @@ module.exports.createStore = () => {
       // this can only increment
       type: Sequelize.INTEGER,
       defaultValue: '0',
+//      validate: {
+//        isValid(value) {
+//          if (parseInt(value) > parseInt(this.total)) {
+//            throw new Error(
+//              'Used count of ticket must be smaller than total usable count.',
+//            );
+//          }
+//        },
+//      },
     },
     total: Sequelize.INTEGER,
   });
