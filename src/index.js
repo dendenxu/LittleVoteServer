@@ -65,7 +65,7 @@ async function initialize() {
     '[DATABASE] Connection to database has been established successfully.',
   );
 
-  const rows = await store.db.getQueryInterface();
+  const rows = await store.db.getQueryInterface().showAllSchemas();
   console.log(JSON.stringify(rows, null, 2));
 
   var ticket = await store.ticket.findByPk(0, {
