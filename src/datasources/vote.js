@@ -15,12 +15,6 @@ class VoteAPI extends DataSource {
     this.context = config.context;
   }
 
-  /**
-   * User can be called with an argument that includes email, but it doesn't
-   * have to be. If the user is already on the context, it will use that user
-   * instead
-   */
-
   async getTicket() {
     const ticket = await this.store.tickets.findByPk(0);
     return {
@@ -82,6 +76,7 @@ class VoteAPI extends DataSource {
             console.error(
               `The name '${name}' doesn't exist in the DB, but we'll continue`,
             );
+            continue;
           }
 
           // If the execution reaches this line, no errors were thrown.
